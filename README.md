@@ -4,7 +4,7 @@
 An open plugin for running Databiomes Language Models in Unreal Engine
 
 ## Installation
-For blueprint only projects, "FloraEngine.zip" can be downloaded from the latest release and extracted to the marketplace plugins folder ("UE_5.6/Engine/Plugins/Marketplace/") for the project to package properly.</br>  
+For blueprint only projects, "FloraEngine.zip" can be downloaded from the latest release and extracted to the marketplace plugins folder ("/UE_5.6/Engine/Plugins/Marketplace/") for the project to package properly.</br>  
 
 Alternatively, the source code can be packaged from a C++ project first and then added to the marketplace plugins folder.</br>
 
