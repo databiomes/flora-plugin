@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright © 2025, Databiomes Inc. All rights reserved
 
 #pragma once
 
@@ -31,41 +31,28 @@ struct NLM {
 };
 
 struct NLMOutput {
-	float token_speed;
-	int size;
-	unsigned char* buffer;
+	float TokenSpeed;
+	int Size;
+	unsigned char* Buffer;
 };
 
-// Struct to hold indices in the model's json for input line structure
-USTRUCT(BlueprintType)
-struct FModelInputCombination {
-	GENERATED_USTRUCT_BODY()
-
-	FModelInputCombination(int FirstLinePrefix = 0, int SecondLinePrefix = 0, int PromptPrefix = 0) { FirstLinePrefixIndex = FirstLinePrefix, SecondLinePrefixIndex = SecondLinePrefix, PromptPrefixIndex = PromptPrefix;}
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FloraEngine")
-	int FirstLinePrefixIndex = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FloraEngine")
-	int SecondLinePrefixIndex = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FloraEngine")
-	int PromptPrefixIndex = 0;
-};
-
-/* 
-*	Struct to hold a single input line option for the model's json input structure along with the index of the line in the json file (maybe move to class for the input pin).
-*	Will be replaced with a drop down pin in blueprints to select the line from the model's json file.
-*/
-USTRUCT(BlueprintType)
-struct FModelInputLine
+USTRUCT()
+struct FModelAsyncPrompt
 {
-	GENERATED_USTRUCT_BODY()
-public:
-	// The actual text of the line as it appears in the json file
-	UPROPERTY(BlueprintReadOnly, Category = "FloraEngine")
-	FName ModelLine;
+	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly, Category = "FloraEngine")
-	int LineIndex = 0;
+	UPROPERTY()
+	UObject* WorldContextObject = nullptr;
+
+	UPROPERTY()
+	UNLM* Model = nullptr;
+	FString Prompt;
+
+	FName InstructionLine;
+
+	// To handle PIE ending while async task is running
+	bool bExiting = false;
+	FDelegateHandle EndPIEHandle;
 };
 
 UCLASS(BlueprintType)
@@ -73,7 +60,7 @@ class UNLMOutput : public UObject {
 	GENERATED_BODY()
 
 public:
-	NLMOutput* output = nullptr;
+	NLMOutput* Output = nullptr;
 };
 
 UCLASS(BlueprintType)
@@ -81,28 +68,40 @@ class UNLM : public UObject {
 	GENERATED_BODY()
 
 public:
-	NLM* model = nullptr;
+	NLM* Model = nullptr;
 
 	UPROPERTY(BlueprintReadWrite, Category = "FloraEngine")
-	FString firstLine = "";
+	FString FirstLine = "";
 
 	UPROPERTY(BlueprintReadWrite, Category = "FloraEngine")
-	FString secondLine = "";
+	FString SecondLine = "";
 
 	// Store previous first line in case of guardrail
-	FString prevFirstLine = "";
+	FString PrevFirstLine = "";
 
 	// Name of the model set using the custom drop down pin (same as folder name in Content/Models directory)
 	FName ModelName;
 
+	// Stores the last instruction line selected
+	FString LastInstructionLine;
+
 	// Stores the "all_combinations"->"input_format" json object for the model for use when formatting input
-	TSharedPtr<FJsonObject> inputFormat;
+	// Stores the "instructions" object 
+	TSharedPtr<FJsonObject> InputFormat;
+
+	// Stores the reverse of the results mapping for encryption/decryption
+	TMap<FString, FString> OutputDecryptMap;
+
+	// Store all possible reactions and instruction-reaction mappings for the model
+	TMap<FString, uint8> AllReactions;
+	TMap<FString, uint8> InstructionIndexMap;
+	TMap<FString, TArray<FString>> InstructionReactionMap;
 
 	// Passes the first and second lines between models. 
 	UFUNCTION(BlueprintCallable, Category = "FloraEngine")
 	void PassConversation(UNLM* FromModel) {
-		firstLine = FromModel->firstLine;
-		secondLine = FromModel->secondLine;
+		FirstLine = FromModel->FirstLine;
+		SecondLine = FromModel->SecondLine;
 	};
 
 };
@@ -116,6 +115,29 @@ typedef void(__stdcall* DeleteNLMFunc)(NLM*);
 typedef void(__stdcall* InferenceNLMFunc)(NLM*, const char*);
 typedef int(__stdcall* LogAddFilePointerFunc)();
 
+// Library for c++
+UCLASS()
+class UFloraEngineLibrary : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	static void Init();
+
+	static UNLM* InitNLM(UObject* WorldContextObject, FName ModelName, FString FirstLine, FString SecondLine);
+
+	static void AsyncInfer(const FModelAsyncPrompt& ModelPrompt, const TFunction<void()>& Fn);
+
+	static void GetOutput(UObject* WorldContextObject, UNLM* Model, FString& Output, FString& Reaction, float& TokenSpeed);
+
+	// Helper function to parse JSON file for model input format
+	static void SetupModelFromJson(UObject* WorldContextObject, UNLM* Model);
+
+	// Helper function to get output from NLM model
+	static UNLMOutput* FloraEngineOutputNLM(UNLM* Model);
+};
+
+// Blueprint library
 UCLASS()
 class UFloraEngineBPLibrary : public UBlueprintFunctionLibrary
 {
@@ -128,26 +150,11 @@ class UFloraEngineBPLibrary : public UBlueprintFunctionLibrary
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Initialize NLM Using Model", Keywords = "NLM initialize flora nlm", ReturnDisplayName = "Model", WorldContext = "WorldContextObject"), Category = "FloraEngine")
 	static UNLM* FloraEngineInitNLM(UObject* WorldContextObject, FName ModelName, FString FirstLine, FString SecondLine);
 
-	// Deprecated
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Delete NLM", Keywords = "NLM delete flora"), Category = "FloraEngine")
-	static void FloraEngineDeleteNLM(UNLM *Model);
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get NLM Output", Keywords = "NLM parse output flora", WorldContext = "WorldContextObject"), Category = "FloraEngine")
+	static void FloraEngineGetOutput(UObject* WorldContextObject, UNLM* Model, FString& Output, uint8& ReactionIndex, FString& Reaction, float& TokenSpeed);
 
-	// Deprecated - use the async version instead
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Infer", Keywords = "NLM infer flora"), Category = "FloraEngine")
-	static void FloraEngineInferNLM(UNLM * Model, FString Prompt);
-
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Output", Keywords = "NLM output flora", ReturnDisplayName = "Model Output"), Category = "FloraEngine")
-	static UNLMOutput* FloraEngineOutputNLM(UNLM* Model);
-
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Parse Output for Text", Keywords = "NLM parse output flora", WorldContext = "WorldContextObject"), Category = "FloraEngine")
-	static void FloraEngineParseOutput(UObject* WorldContextObject, UNLM* Model, UNLMOutput* ModelOutput, FString& output, FString& reaction, float& token_speed);
-
-	// Deprecated
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Parse Input", Keywords = "NLM parse input flora"), Category = "FloraEngine")
-	static FString FloraEngineParseInput(FString prompt_input);
-
-	// Helper function to parse JSON file for model input format
-	static TSharedPtr<FJsonObject> GetModelInputFromJson(FString SubFolder);
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get NLM Output With Instruction", Keywords = "NLM parse output flora", WorldContext = "WorldContextObject"), Category = "FloraEngine")
+	static void FloraEngineGetOutputWithInstruction(UObject* WorldContextObject, UNLM* Model, FString& Output, uint8& InstructionIndex, uint8& ReactionIndex, FString& Reaction, float& TokenSpeed);
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAsyncModelOutputPins);
@@ -160,25 +167,15 @@ class UAsyncFloraEngineBPLibrary : public UBlueprintAsyncActionBase
 public:
 	// Constructor for the AsyncInfer call. Model name is used to load correct input line information
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "true", DisplayName = "AsyncInfer Constructor"), Category = "FloraEngine")
-	static UAsyncFloraEngineBPLibrary* AsyncFloraEngineBPLibrary(UObject* WorldContextObject, UNLM* model, FName ModelName, FModelInputLine InputLine1, FModelInputLine InputLine2, FModelInputLine InputLine3, FString prompt);
-
-	// Constructor for the AsyncInfer call using direct input indices rather than model name and lines (can be more flexible for blueprints)
-	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "true", DisplayName = "AsyncInfer Constructor Index Inputs"), Category = "FloraEngine")
-	static UAsyncFloraEngineBPLibrary* AsyncFloraEngineBPLibraryIndex(UObject* WorldContextObject, UNLM* model, FModelInputCombination Input, FString prompt);
+	static UAsyncFloraEngineBPLibrary* AsyncFloraEngineBPLibraryInstructionLine(UObject* WorldContextObject, UNLM* Model, FName ModelName, FName InstructionLine, FString Prompt);
 
 	UPROPERTY(BlueprintAssignable, Category = "FloraEngine")
 	FAsyncModelOutputPins OnCompleted;
 
 private:
 	virtual void Activate() override;
-	UNLM* Model;
-	FString Prompt;
-	UObject* WorldContextObject;
-	FModelInputCombination Inputs;
 
-	// To handle PIE ending while async task is running
-	bool bExiting = false;
-	FDelegateHandle EndPIEHandle;
+	FModelAsyncPrompt ModelPrompt;
 };
 
 

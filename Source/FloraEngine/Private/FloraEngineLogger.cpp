@@ -1,5 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
+// Copyright © 2025, Databiomes Inc. All rights reserved
 
 #include "FloraEngineLogger.h"
 #include "FloraEngineSettings.h"
@@ -21,9 +20,16 @@ void UFloraEngineLogger::Initialize(FSubsystemCollectionBase& Collection)
 
 void UFloraEngineLogger::LogMessage(const FString& Message)
 {
-	FString MessageWithNewLine = Message + "\n";
-
 	if (UFloraEngineSettings::IsLoggerActive()) {
+		FString FinalMessage = Message;
+		if (UFloraEngineSettings::IsDecryptLog()) {
+			// Decrypt tokens in message
+			for (const TPair<FString, FString>& Pair : DecryptMap) {
+				FinalMessage = FinalMessage.Replace(*Pair.Key, *Pair.Value);
+			}
+		}
+		FString MessageWithNewLine = FinalMessage + "\n";
+
 		IPlatformFile& FileManager = FPlatformFileManager::Get().GetPlatformFile();
 
 		// Append to file if it exists, otherwise create a new file
@@ -39,7 +45,7 @@ void UFloraEngineLogger::LogMessage(const FString& Message)
 		}
 
 		if (UFloraEngineSettings::AlsoLoggingToUnreal()) {
-			UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
+			UE_LOG(LogTemp, Log, TEXT("%s"), *FinalMessage);
 		}
 	}
 }

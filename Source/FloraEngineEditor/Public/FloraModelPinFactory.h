@@ -1,10 +1,9 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright © 2025, Databiomes Inc. All rights reserved
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "EdGraphUtilities.h"
-#include "FloraModelInputPin.h"
 #include "FloraEngineBPLibrary.h"
 
 /*

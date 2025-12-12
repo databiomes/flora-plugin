@@ -1,16 +1,15 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright © 2025, Databiomes Inc. All rights reserved
 
 #include "FloraEngine.h"
 #include "FloraEngineSettings.h"
 #include "Developer/Settings/Public/ISettingsModule.h"
+#include "Interfaces/IPluginManager.h"
+#include "HAL/FileManager.h"
 
 #define LOCTEXT_NAMESPACE "FFloraEngineModule"
 
 void FFloraEngineModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-	//UE_LOG(LogTemp, Warning, TEXT("HELLO FROM NOT INIT"));
-
 	// Register settings
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
 	{
@@ -22,8 +21,7 @@ void FFloraEngineModule::StartupModule()
 
 void FFloraEngineModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
+
 }
 
 #undef LOCTEXT_NAMESPACE

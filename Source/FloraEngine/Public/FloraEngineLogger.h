@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright © 2025, Databiomes Inc. All rights reserved
 
 #pragma once
 
@@ -18,6 +18,10 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+	void AddDecryptToken(const FString& EncryptedToken, const FString& DecryptedToken) {
+		DecryptMap.Add(EncryptedToken, DecryptedToken);
+	}
+
 	// Log a message to the Flora log file
 	UFUNCTION(BlueprintCallable, Category = "FloraEngine|Logger")
 	void LogMessage(const FString& Message);
@@ -25,4 +29,7 @@ public:
 private:
 	FString LogFilePath = "";
 	FString FileName = "";
+
+	// Map to decrypt logged tokens
+	TMap<FString, FString> DecryptMap;	
 };

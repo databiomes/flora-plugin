@@ -1,5 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
+// Copyright © 2025, Databiomes Inc. All rights reserved
 
 #include "FloraModelNamePin.h"
 #include "Widgets/Input/STextComboBox.h"
@@ -18,7 +17,7 @@ TSharedRef<SWidget>	SFloraModelNamePin::GetDefaultValueWidget()
 	// Populate model list from Model root directory
 	IFileManager& FileManager = IFileManager::Get();
 	TArray<FString> Folders;
-	FileManager.FindFiles(Folders, *(IPluginManager::Get().FindPlugin("FloraEngine")->GetBaseDir() + "/" + UFloraEngineSettings::GetModelRootPath() + "/*"), false, true);
+	FileManager.FindFiles(Folders, *(UFloraEngineSettings::GetModelRootPath() + "/*"), false, true);
 	for(FString& Folder : Folders) {
 		ModelList.Add(MakeShareable(new FName(*Folder)));
 	}

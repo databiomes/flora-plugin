@@ -10,10 +10,10 @@
  * Flora Model Name Pin class.
  * Custom pin to select model name from the Models root directory.
  */
-class FLORAENGINEEDITOR_API SFloraModelNamePin : public SGraphPin
+class FLORAENGINEEDITOR_API SFloraModelInstructionPin : public SGraphPin
 {
 public:
-	SLATE_BEGIN_ARGS(SFloraModelNamePin) {}
+	SLATE_BEGIN_ARGS(SFloraModelInstructionPin) {}
 	SLATE_END_ARGS()
 
 public:
@@ -25,7 +25,7 @@ public:
 	// Handle selection change
 	void OnNameSelected(TSharedPtr<FName> ItemSelected, ESelectInfo::Type SelectInfo);
 private:
-	TArray<TSharedPtr<FName>> ModelList;
+	TArray<TSharedPtr<FName>> InstructionList;
 	TSharedPtr<FName>  GetSelectedName();
 	void SetPropertyWithName(FName& Name);
 	void GetPropertyAsName(FName& OutName);

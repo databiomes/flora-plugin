@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright © 2025, Databiomes Inc. All rights reserved
 
 #pragma once
 #include "Modules/ModuleInterface.h"

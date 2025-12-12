@@ -1,4 +1,4 @@
-﻿// Some copyright should be here...
+﻿// Copyright © 2025, Databiomes Inc. All rights reserved
 
 using System.IO;
 using UnrealBuildTool;
@@ -49,7 +49,9 @@ public class FloraEngineEditor : ModuleRules
                 "Kismet",
                 "KismetCompiler",
 				"Json",
-                "FloraEngine"
+				"DesktopWidgets",
+                "FloraEngine",
+                "DeveloperToolSettings"
 				//"UnrealEd",
 				// ... add private dependencies that you statically link with here ...	
 			}

@@ -1,4 +1,4 @@
-﻿// Some copyright should be here...
+﻿// Copyright © 2025, Databiomes Inc. All rights reserved
 
 using System.IO;
 using UnrealBuildTool;
@@ -47,6 +47,11 @@ public class FloraEngine : ModuleRules
 			}
             );
 
+        //if (Target.Platform == UnrealTargetPlatform.Android) // Used to request audio recording permission on Android
+        //{
+        //    PrivateDependencyModuleNames.Add("AndroidPermission");
+        //}
+
         if (Target.bBuildEditor == true)
         {
             PrivateDependencyModuleNames.AddRange(
@@ -64,41 +69,41 @@ public class FloraEngine : ModuleRules
 			}
             );
 
-
-        PublicDelayLoadDLLs.Add("flora.dll");
-
-		// Define paths for different platforms
-		string DllPath = "Content/flora.dll";
-        PublicDefinitions.Add($"FLORA_DLL_PATH=\"{DllPath}\"");
+        // Define paths for different platforms
+        // Flora DLL/SO/Dylib paths
+        string FloraDllPath = Path.Combine("Binaries", "Win64", "flora.dll");
+        FloraDllPath = FloraDllPath.Replace(@"\", @"/");
+        PublicDefinitions.Add($"FLORA_DLL_PATH=\"{FloraDllPath}\"");
 
         string DylibPath = "Content/flora.dylib";
         PublicDefinitions.Add($"FLORA_DYLIB_PATH=\"{DylibPath}\"");
 
-        string SoPath = "libflora.so";
-        PublicDefinitions.Add($"FLORA_SO_PATH=\"{SoPath}\"");
+        string FloraSoPath = "libflora.so";
+        PublicDefinitions.Add($"FLORA_SO_PATH=\"{FloraSoPath}\"");
 
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            RuntimeDependencies.Add(Path.Combine(PluginDirectory, DllPath));
-            System.Console.WriteLine("FloraEngine: Added RuntimeDependency for " + Path.Combine(PluginDirectory, DllPath));
+            // Add Flora DLL as a runtime dependency
+            RuntimeDependencies.Add(Path.Combine(PluginDirectory, FloraDllPath), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/flora.dll"));
+            PublicDelayLoadDLLs.Add("flora.dll");
+            //System.Console.WriteLine("FloraEngine: Added RuntimeDependency for " + FloraDllPath);
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
             RuntimeDependencies.Add(Path.Combine(PluginDirectory, DylibPath));
-            System.Console.WriteLine("FloraEngine: Added RuntimeDependency for " + Path.Combine(PluginDirectory, DylibPath));
+            System.Console.WriteLine("FloraEngine: Added RuntimeDependency for " + DylibPath);
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Android)
         {
             // For Android, we need to add the APL file to the build receipt for .so packaging
             string BuildPath = Utils.MakePathRelativeTo(ModuleDirectory, Target.RelativeEnginePath);
             AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(BuildPath, "Flora_APL.xml")); 
-            RuntimeDependencies.Add(Path.Combine(PluginDirectory,"Content", SoPath));
+            //RuntimeDependencies.Add(Path.Combine(PluginDirectory,"Content", SoPath));
         }
 
         // Check for ModelRootPath in DefaultEngine.ini (this value is set in FloraEngineSettings)
         string ProjectDir = Target.ProjectFile != null ? Target.ProjectFile.Directory.FullName : null;
-		bool found = false;
-        string ModelRootPath = "";
+        string ModelRootPath = "Content/Models"; // default path from FloraEngineSettings
         if (ProjectDir != null)
         {
             string DefaultGameIni = Path.Combine(ProjectDir, "Config", "DefaultEngine.ini");
@@ -108,18 +113,26 @@ public class FloraEngine : ModuleRules
                 {
                     if (line.StartsWith("ModelRootPath="))
                     {
-						found = true;
-                        ModelRootPath = line.Split('=')[1].Trim();
-						break;
+                        ModelRootPath = line.Split('=')[2].Trim();
+                        ModelRootPath = ModelRootPath.Substring(1, ModelRootPath.Length - 3); // remove quotes and trailing )
                     }
                 }
             }
         }
 
-		if (!found)
-            ModelRootPath = "Content/Models"; // default path from FloraEngineSettings
-
         // Add all files in ModelRootPath as runtime dependencies to be packaged
         RuntimeDependencies.Add(Path.Combine(PluginDirectory, ModelRootPath, "*"));
+    }
+
+    private void AddFilesInFolderToRuntimeDependencies(string Folder)
+    {
+        string[] FilesInSubFolder = Directory.GetFiles(Path.Combine(PluginDirectory, Folder));
+
+        foreach (string File in FilesInSubFolder)
+        {
+            string FileName = Path.GetFileName(File);
+            RuntimeDependencies.Add(Path.Combine(PluginDirectory, Folder, FileName));
+            //System.Console.WriteLine("FloraEngine: Added RuntimeDependency for " + FileName);
+        }
     }
 }

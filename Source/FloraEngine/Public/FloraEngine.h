@@ -1,9 +1,8 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright © 2025, Databiomes Inc. All rights reserved
 
 #pragma once
 
 #include "Modules/ModuleManager.h"
-
 
 class FFloraEngineModule : public IModuleInterface
 {
@@ -11,4 +10,8 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+
+	void* GetFloraDLLHandle() const { return FloraDLLHandle; }
+private:
+	void* FloraDLLHandle;
 };

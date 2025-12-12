@@ -104,4 +104,8 @@ DerivedDataCache/*
 # Miscellaneous Generated Files #
 #################################
 # ADD AS NEED BE
-/Content
+/Content/*.so
+/Content/*.dll
+/Content/*.bin
+/Content/*/*/*.json
+

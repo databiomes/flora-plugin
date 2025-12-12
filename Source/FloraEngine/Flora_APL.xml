@@ -11,8 +11,12 @@
 	<!-- /arm64-v8a/libflora.so -->
 	<resourceCopies>
 		<isArch arch="arm64-v8a">
-			<copyFile src="$S(PluginDir)/../../Content/libflora.so"
+			<copyFile src="$S(PluginDir)/../../Source/ThirdParty/bin/Android/libflora.so"
 						dst="$S(BuildDir)/libs/arm64-v8a/libflora.so" />
+			<!-- Kokoro (NNE Currently doesn't support Android)
+			<copyFile src="$S(PluginDir)/../../Binaries/kokoro/Android/libespeak-ng.so"
+						dst="$S(BuildDir)/libs/arm64-v8a/libespeak-ng.so" />
+			-->
 		</isArch>
 	</resourceCopies>
 
