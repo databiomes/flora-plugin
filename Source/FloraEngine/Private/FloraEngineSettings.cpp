@@ -6,43 +6,19 @@
 UFloraEngineSettings::UFloraEngineSettings(const FObjectInitializer& ObjectInitializer) {
 	LoadConfig();
 
-	WhisperModel.FilePath = TEXT("Content/Whisper/ggml-tiny.en.bin");
 	ModelRootPath.Path = TEXT("Content/Models");
-}
-void UFloraEngineSettings::PostInitProperties()
-{
-	Super::PostInitProperties();
-	if (IPluginManager::Get().FindPlugin(TEXT("FloraEngineAddon")).IsValid()) {
-		bAddonPluginEnabled = IPluginManager::Get().FindPlugin(TEXT("FloraEngineAddon"))->IsEnabled();
-	}
-	else {
-		bAddonPluginEnabled = false;
-	}
 }
 
 #if WITH_EDITOR
 void UFloraEngineSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
-
-	static const FName WhisperModelPicker = GET_MEMBER_NAME_CHECKED(UFloraEngineSettings, WhisperModel);
 	static const FName ModelRootPicker = GET_MEMBER_NAME_CHECKED(UFloraEngineSettings, ModelRootPath);
 
-	if (PropertyChangedEvent.Property && PropertyChangedEvent.MemberProperty->GetFName() == WhisperModelPicker)
-	{
-		TSharedPtr<IPlugin> AddonPlugin = IPluginManager::Get().FindPlugin(TEXT("FloraEngineAddon"));
-		if (!AddonPlugin)
-			return;
-		FString PluginDir = AddonPlugin->GetBaseDir();
-		PluginDir = FPaths::Combine(PluginDir, TEXT("")); // ensures trailing slash
-		// Automatically convert and save the relative path
-		FPaths::MakePathRelativeTo(WhisperModel.FilePath, *PluginDir);
+	if (!PropertyChangedEvent.Property)
+		return;
 
-		if (!FPaths::IsRelative(WhisperModel.FilePath)) {
-			UE_LOG(LogTemp, Warning, TEXT("Whisper Model path must be relative to the Flora Engine plugin directory!"));
-		}
-	}
-	else if (PropertyChangedEvent.Property && PropertyChangedEvent.MemberProperty->GetFName() == ModelRootPicker)
+	if (PropertyChangedEvent.MemberProperty->GetFName() == ModelRootPicker)
 	{
 		FString PluginDir = IPluginManager::Get().FindPlugin(TEXT("FloraEngine"))->GetBaseDir();
 		PluginDir = FPaths::Combine(PluginDir, TEXT("")); // ensures trailing slash
@@ -52,6 +28,7 @@ void UFloraEngineSettings::PostEditChangeProperty(FPropertyChangedEvent& Propert
 			UE_LOG(LogTemp, Warning, TEXT("Model root path must be relative to the Flora Engine plugin directory!"));
 		}
 	}
+
 }
 #endif
 
@@ -88,19 +65,3 @@ FString UFloraEngineSettings::GetTemplatePath(FName ModelName) {
 FString UFloraEngineSettings::GetGuardrailedReaction() {
 	return GetMutableDefault<UFloraEngineSettings>()->GuardrailedReaction;
 }
-
-FString UFloraEngineSettings::GetWhisperModelPath() {
-	FString PluginDir = IPluginManager::Get().FindPlugin(TEXT("FloraEngineAddon"))->GetBaseDir();
-	FString FullPath = FPaths::ConvertRelativePathToFull(*PluginDir, GetMutableDefault<UFloraEngineSettings>()->WhisperModel.FilePath);
-	return FullPath;
-}
-
-/** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Realtime Whisper ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FString UFloraEngineSettings::GetRealtimeFileName() {
-	return GetMutableDefault<UFloraEngineSettings>()->RealtimeFileName;
-}
-
-FString UFloraEngineSettings::GetRealtimeFilePath() {
-	return GetMutableDefault<UFloraEngineSettings>()->RealtimeFilePath;
-}
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Realtime Whisper ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */

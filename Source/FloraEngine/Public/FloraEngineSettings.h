@@ -15,7 +15,6 @@ class FLORAENGINE_API UFloraEngineSettings : public UObject
 public:
 	GENERATED_BODY()
 	UFloraEngineSettings(const FObjectInitializer& ObjectInitializer);
-	void PostInitProperties() override;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -43,20 +42,6 @@ public:
 
 	UPROPERTY(config, EditAnywhere, Category = "Logging", meta = (EditCondition = "bLoggerActive", EditConditionHides))
 	bool bDecryptLog = false;
-
-	// Whisper Settings
-	UPROPERTY(VisibleAnywhere, Transient, Category = "Whisper")
-	bool bAddonPluginEnabled = false;
-	UPROPERTY(config, EditAnywhere, Category = "Whisper", meta = (EditCondition = "bAddonPluginEnabled", FilePathFilter = "Whisper Model (*.bin)|*.bin", Tooltip = "Model to use for Whisper"))
-	FFilePath WhisperModel;
-
-	/** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Realtime Whisper ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	UPROPERTY(config, EditAnywhere, Category = "Whisper", meta = (Tooltip = "Temporary file name for realtime audio capture"))
-	FString RealtimeFileName = "Realtime_Temp";
-
-	UPROPERTY(config, EditAnywhere, Category = "Whisper", meta = (Tooltip = "Temporary file path for realtime audio capture"))
-	FString RealtimeFilePath = "";
-		~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Realtime Whisper ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 	
 	UFUNCTION(BlueprintCallable, Category = "FloraEngine|Settings")
 	static bool IsLoggerActive();
@@ -73,13 +58,4 @@ public:
 	static FString GetTemplatePath(FName ModelName);
 	UFUNCTION()
 	static FString GetGuardrailedReaction();
-	UFUNCTION()
-	static FString GetWhisperModelPath();
-
-	/** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Realtime Whisper ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	UFUNCTION()
-	static FString GetRealtimeFileName();
-	UFUNCTION()
-	static FString GetRealtimeFilePath();
-	   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Realtime Whisper ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 };

@@ -225,6 +225,7 @@ void UFloraEngineLibrary::GetOutput(UObject* WorldContextObject, UNLM* Model, FS
 
 	TArray<FString> Lines;
 	OutputStr.ParseIntoArrayLines(Lines);
+	Output = Lines[0];
 	Reaction = Lines[1];
 
 	// If the reaction is guardrailed, revert to previous first line

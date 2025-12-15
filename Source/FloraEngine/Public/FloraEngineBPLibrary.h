@@ -117,7 +117,7 @@ typedef int(__stdcall* LogAddFilePointerFunc)();
 
 // Library for c++
 UCLASS()
-class UFloraEngineLibrary : public UObject
+class FLORAENGINE_API UFloraEngineLibrary : public UObject
 {
 	GENERATED_BODY()
 
