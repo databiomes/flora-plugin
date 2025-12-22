@@ -15,11 +15,14 @@ Adding plugin to marketplace plugins is recommended for both types of projects.<
 For C++ Unreal Engine projects plugin CAN be included in the project directory under Plugins instead.
 
 Files for the models (tokenizer.bin and weights.bin) must be located in a folder within the plugin (default: Content/Models/, can be adjusted in the settings) with each model contained in a subfolder along with a template .json file. The .json file must have the same name as the model name used for the folder with "_template" appended to the end of the name.</br>
-The library files (flora.dll for Windows or libflora.so for Android) are not included an must be located in the Source/ThirdParty/bin/Win64 or Source/ThirdParty/bin/Android respectively.
+The library files (flora.dll for Windows or libflora.so for Android) are not included an must be located in the Source/ThirdParty/bin/Win64 or Source/ThirdParty/bin/Android respectively and the dll must also be placed in Binaries/Win64.
 
 Example file structure:
 ```
 📦 FloraEngine
+├─ 📁Binaries
+|  └─ 📁Win64
+|     └─ 📄flora.dll
 ├─ 📁Source
 │  └─ 📁ThirdParty
 │     └─ 📁bin
