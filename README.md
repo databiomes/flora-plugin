@@ -57,4 +57,4 @@ In order to infer the model you can use the node "AsyncInfer Constructor". This 
 <picture> <img width="435" height="292" alt="image" src="https://github.com/user-attachments/assets/1d90a873-9655-4143-a5cd-768ff74ca2c6" /> </picture></br>
 
 The output must then be retrieved from the NLM using the "Get NLM Output" node (note: this node must be used on the model after the AsyncInfer node has completed). This node will output the generated text as "Output", the "Reaction Index" which can be used along side the generated reaction enums in the settings to create a state machine, the "Reaction" value itself and the "Token Speed". </br></br>
-<picture> <img width="1266" height="432" alt="image" src="https://github.com/user-attachments/assets/1f9e1716-15ef-4ba8-926f-f8549f0a4619" /> </picture></br>
+<picture> <img width="1266" height="350" alt="image" src="https://github.com/user-attachments/assets/1f9e1716-15ef-4ba8-926f-f8549f0a4619" /> </picture></br>
