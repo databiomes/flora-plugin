@@ -6,7 +6,7 @@
 #include "Dom/JsonObject.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Kismet/BlueprintAsyncActionBase.h" // Engine
-#include "FloraEngineBPLibrary.generated.h"
+#include "FloraEngineSubsystem.generated.h"
 
 /* 
 *	Function library class.
@@ -115,46 +115,45 @@ typedef void(__stdcall* DeleteNLMFunc)(NLM*);
 typedef void(__stdcall* InferenceNLMFunc)(NLM*, const char*);
 typedef int(__stdcall* LogAddFilePointerFunc)();
 
-// Library for c++
+// Subsystem class
 UCLASS()
-class FLORAENGINE_API UFloraEngineLibrary : public UObject
+class FLORAENGINE_API UFloraEngineSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
 public:
-	static void Init();
-
-	static UNLM* InitNLM(UObject* WorldContextObject, FName ModelName, FString FirstLine, FString SecondLine);
-
-	static void AsyncInfer(const FModelAsyncPrompt& ModelPrompt, const TFunction<void()>& Fn);
-
-	static void GetOutput(UObject* WorldContextObject, UNLM* Model, FString& Output, FString& Reaction, float& TokenSpeed);
-
-	// Helper function to parse JSON file for model input format
-	static void SetupModelFromJson(UObject* WorldContextObject, UNLM* Model);
-
-	// Helper function to get output from NLM model
-	static UNLMOutput* FloraEngineOutputNLM(UNLM* Model);
-};
-
-// Blueprint library
-UCLASS()
-class UFloraEngineBPLibrary : public UBlueprintFunctionLibrary
-{
-	GENERATED_UCLASS_BODY()
+	virtual void Deinitialize() override;
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Initialize Flora Lib", Keywords = "NLM initialize flora", ReturnDisplayName = "Model", WorldContext = "WorldContextObject"), Category = "FloraEngine")
-	static void FloraEngineInit();
+	void Init();
 
-	// Initialize an instance of a particular model
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Initialize NLM Using Model", Keywords = "NLM initialize flora nlm", ReturnDisplayName = "Model", WorldContext = "WorldContextObject"), Category = "FloraEngine")
-	static UNLM* FloraEngineInitNLM(UObject* WorldContextObject, FName ModelName, FString FirstLine, FString SecondLine);
+	UNLM* InitNLM(UObject* WorldContextObject, FName ModelName, FString FirstLine, FString SecondLine);
+
+	void AsyncInfer(FModelAsyncPrompt* ModelPrompt, const TFunction<void()>& Fn);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get NLM Output", Keywords = "NLM parse output flora", WorldContext = "WorldContextObject"), Category = "FloraEngine")
-	static void FloraEngineGetOutput(UObject* WorldContextObject, UNLM* Model, FString& Output, uint8& ReactionIndex, FString& Reaction, float& TokenSpeed);
+	void GetOutput(UObject* WorldContextObject, UNLM* Model, FString& Output, uint8& InstructionIndex, uint8& ReactionIndex, FString& Reaction, float& TokenSpeed);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get NLM Output With Instruction", Keywords = "NLM parse output flora", WorldContext = "WorldContextObject"), Category = "FloraEngine")
-	static void FloraEngineGetOutputWithInstruction(UObject* WorldContextObject, UNLM* Model, FString& Output, uint8& InstructionIndex, uint8& ReactionIndex, FString& Reaction, float& TokenSpeed);
+
+private:
+	// Helper function to parse JSON file for model input format
+	void SetupModelFromJson(UObject* WorldContextObject, UNLM* Model);
+
+	// Helper function to get output from NLM model
+	UNLMOutput* FloraEngineOutputNLM(UNLM* Model);
+
+	bool bInitialized = false;
+	FString ModelRootPath = "";
+
+	InitNLMFunc _DLLInitNLM = nullptr;
+	DeleteNLMFunc _DLLDelNLM = nullptr;
+	InferenceNLMFunc _DLLInferNLM = nullptr;
+	OutputNLMFunc _DLLOutputNLM = nullptr;
+	LogAddFilePointerFunc _DLLLogAddFilePointer = nullptr;
+
+	FDelegateHandle EndPIEHandle;
+	TArray<FModelAsyncPrompt*> ActivePrompts;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAsyncModelOutputPins);

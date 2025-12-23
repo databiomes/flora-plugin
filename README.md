@@ -20,9 +20,9 @@ The library files (flora.dll for Windows or libflora.so for Android) are not inc
 Example file structure:
 ```
 📦 FloraEngine
-├─ 📁Binaries
-|  └─ 📁Win64
-|     └─ 📄flora.dll
+├─ 📁Binaries
+|  └─ 📁Win64
+|     └─ 📄flora.dll
 ├─ 📁Source
 │  └─ 📁ThirdParty
 │     └─ 📁bin
@@ -48,13 +48,13 @@ Example file structure:
 ## Getting Started
 After the plugin is installed with the model files in the correct locations, Flora Engine blueprint nodes will be available for use and plugin settings will appear in the project settings. </br>
 First, navigate to the Flora Engine settings in Edit > Project Settings > Plugins > Flora Engine. From here you will be able to customize features of the logger as well as Flora Engine itself. The "Model Root Path" must be set to the root folder where the Flora models can be found. Once set, the "Generate Reactions" button can be used to create enum assets based on the possible outputs of each model as well as the instructions they are mapped to. </br></br>
-<picture> <img width="660" height="507" alt="image" src="https://github.com/user-attachments/assets/1151be9e-b672-43b2-bb5f-9c12cf7227be" /> </picture></br>
+<picture> <img width="851" height="345" alt="image" src="https://github.com/user-attachments/assets/be84489c-89db-4f2b-b240-afcea2e3513f" /> </picture></br>
 
-The node "Initialize Flora Lib" must be called before using the other nodes of the plugin. Create a new actor or navigate to the level blueprint and connect the node to begin play. Next, each instance of models to be used must be initialized using the "Initialize NLM Using Model" node. With this node, there will be a dropdown called "Model Name" that, if model files and settings are properly set up, will show a list of your available models. If the models are not appearing, try compiling the blueprint again to update the node (additionally if there are any changes to the models folder, the blueprint will need to be recompiled). The model can be provided with a "First Line" and "Second Line" prompt for its initial inference. </br></br>
+The node "Initialize Flora Lib" must be called before using the other nodes of the plugin. Create a new actor or navigate to the level blueprint, get the Flora Engine Subsystem and connect the initialize node to BeginPlay. Next, each instance of models to be used must be initialized using the "Initialize NLM Using Model" node. With this node, there will be a dropdown called "Model Name" that, if model files and settings are properly set up, will show a list of your available models. If the models are not appearing, try compiling the blueprint again to update the node (additionally if there are any changes to the models folder, the blueprint will need to be recompiled). The model can be provided with a "First Line" and "Second Line" prompt for its initial inference. </br></br>
 <picture> <img width="778" height="254" alt="image" src="https://github.com/user-attachments/assets/e65fcd6d-4109-4560-8706-d7531bd2a2a1" /> </picture></br>
 
 In order to infer the model you can use the node "AsyncInfer Constructor". This node takes in the model as a parameter along with the name of the model given when the NLM was initialized. Setting the "Model Name" and compiling will update the "Instruction Line" dropdown and populate it with the available instruction prompts according to the template file. There is also a "Prompt" field for extended instructions. </br></br>
 <picture> <img width="435" height="292" alt="image" src="https://github.com/user-attachments/assets/1d90a873-9655-4143-a5cd-768ff74ca2c6" /> </picture></br>
 
 The output must then be retrieved from the NLM using the "Get NLM Output" node (note: this node must be used on the model after the AsyncInfer node has completed). This node will output the generated text as "Output", the "Reaction Index" which can be used along side the generated reaction enums in the settings to create a state machine, the "Reaction" value itself and the "Token Speed". </br></br>
-<picture> <img width="842" height="249" alt="image" src="https://github.com/user-attachments/assets/7f8c9686-e520-428d-bf2d-94106bd0d2e0" /> </picture></br>
+<picture> <img width="1266" height="432" alt="image" src="https://github.com/user-attachments/assets/1f9e1716-15ef-4ba8-926f-f8549f0a4619" /> </picture></br>

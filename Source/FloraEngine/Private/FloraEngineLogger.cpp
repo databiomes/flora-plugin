@@ -2,6 +2,9 @@
 
 #include "FloraEngineLogger.h"
 #include "FloraEngineSettings.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
+#include "HAL/PlatformFileManager.h"
 
 void UFloraEngineLogger::Initialize(FSubsystemCollectionBase& Collection)
 {

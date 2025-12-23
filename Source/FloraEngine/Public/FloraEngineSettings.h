@@ -21,9 +21,6 @@ public:
 #endif
 
 	// General settings
-	UPROPERTY(config, EditAnywhere, Category = "General", meta = (Tooltip = "The guardrail reaction to ignore when conversing with model."))
-	FString GuardrailedReaction = "";
-
 	UPROPERTY(config, EditAnywhere, Category = "General", meta = (Tooltip = "Where the model folders are located within the plugin. Model folders must contain tokenizer.bin, weights.bin and a .json file with the same name as the model folder."))
 	FDirectoryPath ModelRootPath;
 
@@ -56,6 +53,4 @@ public:
 	static FString GetModelRootPath();
 	UFUNCTION()
 	static FString GetTemplatePath(FName ModelName);
-	UFUNCTION()
-	static FString GetGuardrailedReaction();
 };

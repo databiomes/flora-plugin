@@ -61,7 +61,3 @@ FString UFloraEngineSettings::GetTemplatePath(FName ModelName) {
 	return FPaths::Combine(*GetModelRootPath(), ModelName.ToString(), *(ModelName.ToString() + "_template.json"));
 #endif
 }
-
-FString UFloraEngineSettings::GetGuardrailedReaction() {
-	return GetMutableDefault<UFloraEngineSettings>()->GuardrailedReaction;
-}

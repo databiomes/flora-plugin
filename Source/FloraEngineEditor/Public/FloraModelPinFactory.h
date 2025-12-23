@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EdGraphUtilities.h"
-#include "FloraEngineBPLibrary.h"
+#include "FloraEngineSubsystem.h"
 
 /*
  * Flora Model Pin Factory class.
