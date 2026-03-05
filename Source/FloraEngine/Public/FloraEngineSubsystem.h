@@ -8,7 +8,7 @@
 #include "Kismet/BlueprintAsyncActionBase.h" // Engine
 #include "FloraEngineSubsystem.generated.h"
 
-/* 
+/*
 *	Function library class.
 *	Each function in it is expected to be static and represents blueprint node that can be called in any blueprint.
 *
@@ -18,7 +18,7 @@
 *	DisplayName - full name of the node, shown when you mouse over the node and in the blueprint drop down menu.
 *				Its lets you name the node using characters not allowed in C++ function names.
 *	CompactNodeTitle - the word(s) that appear on the node.
-*	Keywords -	the list of keywords that helps you to find node when you search for it using Blueprint drop-down menu. 
+*	Keywords -	the list of keywords that helps you to find node when you search for it using Blueprint drop-down menu.
 *				Good example is "Print String" node which you can find also by using keyword "log".
 *	Category -	the category your node will be under in the Blueprint drop-down menu.
 *
@@ -46,8 +46,11 @@ struct FModelAsyncPrompt
 
 	UPROPERTY()
 	UNLM* Model = nullptr;
+
+	// Actual prompt text to send to the model
 	FString Prompt;
 
+	// Instruction line to prompt with (from template)
 	FName InstructionLine;
 
 	// To handle PIE ending while async task is running
@@ -70,14 +73,13 @@ class UNLM : public UObject {
 public:
 	NLM* Model = nullptr;
 
-	UPROPERTY(BlueprintReadWrite, Category = "FloraEngine")
-	FString FirstLine = "";
+	// Number of input lines required for the model (from json file)
+	UPROPERTY(BlueprintReadOnly, Category = "FloraEngine")
+	int NumInputs = 0;
 
+	// Stores input lines before the prompt, should contain NumInputs - 1 lines
 	UPROPERTY(BlueprintReadWrite, Category = "FloraEngine")
-	FString SecondLine = "";
-
-	// Store previous first line in case of guardrail
-	FString PrevFirstLine = "";
+	TArray<FString> InputLines;
 
 	// Name of the model set using the custom drop down pin (same as folder name in Content/Models directory)
 	FName ModelName;
@@ -96,21 +98,14 @@ public:
 	TMap<FString, uint8> AllReactions;
 	TMap<FString, uint8> InstructionIndexMap;
 	TMap<FString, TArray<FString>> InstructionReactionMap;
-
-	// Passes the first and second lines between models. 
-	UFUNCTION(BlueprintCallable, Category = "FloraEngine")
-	void PassConversation(UNLM* FromModel) {
-		FirstLine = FromModel->FirstLine;
-		SecondLine = FromModel->SecondLine;
-	};
-
 };
+
 #if PLATFORM_ANDROID
 #define __stdcall
 #endif
 
-typedef NLM*(__stdcall* InitNLMFunc)(const char*);
-typedef NLMOutput*(__stdcall* OutputNLMFunc)(NLM*);
+typedef NLM* (__stdcall* InitNLMFunc)(const char*, bool);
+typedef NLMOutput* (__stdcall* OutputNLMFunc)(NLM*);
 typedef void(__stdcall* DeleteNLMFunc)(NLM*);
 typedef void(__stdcall* InferenceNLMFunc)(NLM*, const char*);
 typedef int(__stdcall* LogAddFilePointerFunc)();
@@ -124,14 +119,22 @@ class FLORAENGINE_API UFloraEngineSubsystem : public UGameInstanceSubsystem
 public:
 	virtual void Deinitialize() override;
 
+	// Initializes Flora Engine. Must be called before using the subsystem.
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Initialize Flora Lib", Keywords = "NLM initialize flora", ReturnDisplayName = "Model", WorldContext = "WorldContextObject"), Category = "FloraEngine")
 	void Init();
 
+	// Initializes an NLM model from the model directory. Note: Parallel NLM models are currently not supported. NLM must be deleted before initializing a new one
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Initialize NLM Using Model", Keywords = "NLM initialize flora nlm", ReturnDisplayName = "Model", WorldContext = "WorldContextObject"), Category = "FloraEngine")
-	UNLM* InitNLM(UObject* WorldContextObject, FName ModelName, FString FirstLine, FString SecondLine);
+	UNLM* InitNLM(UObject* WorldContextObject, FName ModelName, TArray<FString> InputLines);
 
+	// Deletes an NLM model. Note: Must be done BEFORE initializing a new model
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Delete NLM", Keywords = "NLM delete flora nlm", WorldContext = "WorldContextObject"), Category = "FloraEngine")
+	void DeleteNLM(UNLM* Model);
+
+	// Runs inference on a separate thread and calls the provided function on the game thread when complete
 	void AsyncInfer(FModelAsyncPrompt* ModelPrompt, const TFunction<void()>& Fn);
 
+	// Gets the output and reaction from a model after inference. Index of the given instruction and output reaction index are also returned.
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get NLM Output", Keywords = "NLM parse output flora", WorldContext = "WorldContextObject"), Category = "FloraEngine")
 	void GetOutput(UObject* WorldContextObject, UNLM* Model, FString& Output, uint8& InstructionIndex, uint8& ReactionIndex, FString& Reaction, float& TokenSpeed);
 
@@ -154,12 +157,14 @@ private:
 
 	FDelegateHandle EndPIEHandle;
 	TArray<FModelAsyncPrompt*> ActivePrompts;
+
+	TArray<UNLM*> NLMs;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAsyncModelOutputPins);
 
 UCLASS()
-class UAsyncFloraEngineBPLibrary : public UBlueprintAsyncActionBase 
+class UAsyncFloraEngineBPLibrary : public UBlueprintAsyncActionBase
 {
 	GENERATED_UCLASS_BODY()
 

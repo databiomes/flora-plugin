@@ -3,18 +3,35 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DeveloperSettings.h"
+#if WITH_EDITOR
+#include "Framework/Notifications/NotificationManager.h"
+#endif
+
 #include "FloraEngineSettings.generated.h"
 
-/*
- *	Flora Engine Settings class.
- *	Settings for the Flora Engine plugin. Accessible in Project Settings under Plugins->Flora Engine.
- */
-UCLASS(config = Engine, defaultconfig)
-class FLORAENGINE_API UFloraEngineSettings : public UObject
+DECLARE_LOG_CATEGORY_EXTERN(LogFlora, Log, All);
+
+UENUM(BlueprintType)
+enum class EDeviceType : uint8
+{
+	cpu UMETA(DisplayName = "GeneralCPU"),
+	intel_cpu  UMETA(DisplayName = "IntelCPU"),
+	intel_npu UMETA(DisplayName = "IntelNPU"),
+	amd_npu  UMETA(DisplayName = "AMDNPU")
+};
+
+// Configure Flora Engine plugin.
+UCLASS(config = Engine, defaultconfig, meta = (DisplayName = "Flora Engine"))
+class FLORAENGINE_API UFloraEngineSettings : public UDeveloperSettings
 {
 public:
 	GENERATED_BODY()
 	UFloraEngineSettings(const FObjectInitializer& ObjectInitializer);
+
+	virtual FName GetContainerName() const override { return FName("Project"); }
+	virtual FName GetCategoryName() const override { return FName("Plugins"); }
+	virtual FName GetSectionName() const override { return FName("Flora Engine"); }
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -26,6 +43,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "General")
 	FString GenerateReactions;
+
+	UPROPERTY(config, EditAnywhere, Category = "General", meta = (Tooltip = "Device that Flora will use."))
+	EDeviceType DeviceType = EDeviceType::cpu;
 	
 	// Logging settings
 	UPROPERTY(config, EditAnywhere, Category = "Logging", meta = (Tooltip = "Creates a log in Saved/Logs showing the inputs and output for models"))
@@ -53,4 +73,11 @@ public:
 	static FString GetModelRootPath();
 	UFUNCTION()
 	static FString GetTemplatePath(FName ModelName);
+	UFUNCTION()
+	static EDeviceType GetDeviceType();
+
+private:
+#if WITH_EDITOR
+	TSharedPtr<SNotificationItem> Notification;
+#endif
 };

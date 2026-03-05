@@ -12,6 +12,8 @@ public:
 	virtual void ShutdownModule() override;
 
 	void* GetFloraDLLHandle() const { return FloraDLLHandle; }
+
+	void FreeFloraDLLHandle();
 private:
 	void* FloraDLLHandle;
 };

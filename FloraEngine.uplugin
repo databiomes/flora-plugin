@@ -1,18 +1,17 @@
 {
 	"FileVersion": 3,
 	"Version": 2,
-	"VersionName": "1.03",
+	"VersionName": "1.1.0",
 	"FriendlyName": "FloraEngine",
-	"Description": "Blueprint nodes for using the Flora Engine",
+	"Description": "Library for using Flora Engine",
 	"Category": "AI",
 	"CreatedBy": "DataBiomes",
 	"CreatedByURL": "https://databiomes.com/",
 	"DocsURL": "github.com/databiomes/flora-plugin",
 	"MarketplaceURL": "",
 	"SupportURL": "",
+	"EngineVersion": "5.6.0",
 	"CanContainContent": true,
-	"IsBetaVersion": false,
-	"IsExperimentalVersion": false,
 	"Installed": true,
 	"Modules": [
 		{

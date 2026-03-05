@@ -41,16 +41,12 @@ public class FloraEngine : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
-                "Json"
+                "Json",
+                "DeveloperSettings"
 				//"UnrealEd",
 				// ... add private dependencies that you statically link with here ...	
 			}
             );
-
-        //if (Target.Platform == UnrealTargetPlatform.Android) // Used to request audio recording permission on Android
-        //{
-        //    PrivateDependencyModuleNames.Add("AndroidPermission");
-        //}
 
         if (Target.bBuildEditor == true)
         {
@@ -69,38 +65,6 @@ public class FloraEngine : ModuleRules
 			}
             );
 
-        // Define paths for different platforms
-        // Flora DLL/SO/Dylib paths
-        string FloraDllPath = Path.Combine("Binaries", "Win64", "flora.dll");
-        FloraDllPath = FloraDllPath.Replace(@"\", @"/");
-        PublicDefinitions.Add($"FLORA_DLL_PATH=\"{FloraDllPath}\"");
-
-        string DylibPath = "Content/flora.dylib";
-        PublicDefinitions.Add($"FLORA_DYLIB_PATH=\"{DylibPath}\"");
-
-        string FloraSoPath = "libflora.so";
-        PublicDefinitions.Add($"FLORA_SO_PATH=\"{FloraSoPath}\"");
-
-        if (Target.Platform == UnrealTargetPlatform.Win64)
-        {
-            // Add Flora DLL as a runtime dependency
-            RuntimeDependencies.Add(Path.Combine(PluginDirectory, FloraDllPath), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/flora.dll"));
-            PublicDelayLoadDLLs.Add("flora.dll");
-            //System.Console.WriteLine("FloraEngine: Added RuntimeDependency for " + FloraDllPath);
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Mac)
-        {
-            RuntimeDependencies.Add(Path.Combine(PluginDirectory, DylibPath));
-            System.Console.WriteLine("FloraEngine: Added RuntimeDependency for " + DylibPath);
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Android)
-        {
-            // For Android, we need to add the APL file to the build receipt for .so packaging
-            string BuildPath = Utils.MakePathRelativeTo(ModuleDirectory, Target.RelativeEnginePath);
-            AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(BuildPath, "Flora_APL.xml")); 
-            //RuntimeDependencies.Add(Path.Combine(PluginDirectory,"Content", SoPath));
-        }
-
         // Check for ModelRootPath in DefaultEngine.ini (this value is set in FloraEngineSettings)
         string ProjectDir = Target.ProjectFile != null ? Target.ProjectFile.Directory.FullName : null;
         string ModelRootPath = "Content/Models"; // default path from FloraEngineSettings
@@ -118,6 +82,38 @@ public class FloraEngine : ModuleRules
                     }
                 }
             }
+        }
+
+        // Define paths for different platforms
+        // Flora SO/Dylib paths
+        string DylibPath = "Content/flora.dylib";
+        PublicDefinitions.Add($"FLORA_DYLIB_PATH=\"{DylibPath}\"");
+
+        string FloraSoPath = "libflora.so";
+        PublicDefinitions.Add($"FLORA_SO_PATH=\"{FloraSoPath}\"");
+
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            // Add Flora DLL as a runtime dependency
+            RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/amd_npu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/amd_npu", "flora.dll"));
+            RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/cpu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/cpu", "flora.dll"));
+            RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/intel_npu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/intel_npu", "flora.dll"));
+            RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/intel_npu", "openvino.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/intel_npu", "openvino.dll"));
+
+            PublicDelayLoadDLLs.Add("openvino.dll");
+            PublicDelayLoadDLLs.Add("flora.dll");
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Mac)
+        {
+            RuntimeDependencies.Add(Path.Combine(PluginDirectory, DylibPath));
+            System.Console.WriteLine("FloraEngine: Added RuntimeDependency for " + DylibPath);
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Android)
+        {
+            // For Android, we need to add the APL file to the build receipt for .so packaging
+            string BuildPath = Utils.MakePathRelativeTo(ModuleDirectory, Target.RelativeEnginePath);
+            AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(BuildPath, "Flora_APL.xml")); 
+            //RuntimeDependencies.Add(Path.Combine(PluginDirectory,"Content", SoPath));
         }
 
         // Add all files in ModelRootPath as runtime dependencies to be packaged

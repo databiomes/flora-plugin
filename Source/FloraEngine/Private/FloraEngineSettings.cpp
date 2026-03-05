@@ -2,6 +2,13 @@
 
 #include "FloraEngineSettings.h"
 #include "Interfaces/IPluginManager.h"
+#if WITH_EDITOR
+#include "Widgets/Notifications/SNotificationList.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "FloraEngine.h"
+#endif
+
+DEFINE_LOG_CATEGORY(LogFlora);
 
 UFloraEngineSettings::UFloraEngineSettings(const FObjectInitializer& ObjectInitializer) {
 	LoadConfig();
@@ -14,6 +21,7 @@ void UFloraEngineSettings::PostEditChangeProperty(FPropertyChangedEvent& Propert
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 	static const FName ModelRootPicker = GET_MEMBER_NAME_CHECKED(UFloraEngineSettings, ModelRootPath);
+	static const FName DeviceTypePicker = GET_MEMBER_NAME_CHECKED(UFloraEngineSettings, DeviceType);
 
 	if (!PropertyChangedEvent.Property)
 		return;
@@ -25,7 +33,38 @@ void UFloraEngineSettings::PostEditChangeProperty(FPropertyChangedEvent& Propert
 		FPaths::MakePathRelativeTo(ModelRootPath.Path, *PluginDir);
 
 		if (!FPaths::IsRelative(ModelRootPath.Path)) {
-			UE_LOG(LogTemp, Warning, TEXT("Model root path must be relative to the Flora Engine plugin directory!"));
+			UE_LOG(LogFlora, Warning, TEXT("Model root path must be relative to the Flora Engine plugin directory!"));
+		}
+	} 
+	else if (PropertyChangedEvent.MemberProperty->GetFName() == DeviceTypePicker)
+	{
+		if (Notification.IsValid())
+			return;
+		FNotificationInfo Info(FText::FromString("Editor restart required"));
+		Info.ButtonDetails.Add(
+			FNotificationButtonInfo(
+				FText::FromString("Restart Now"),
+				FText::FromString("Restart the editor"),
+				FSimpleDelegate::CreateLambda([]()
+					{
+						FUnrealEdMisc::Get().RestartEditor(false);
+					})
+			)
+		);
+		Info.bFireAndForget = false;          
+		Info.bUseLargeFont = false;
+		Info.bUseSuccessFailIcons = false;
+		Info.ExpireDuration = 0.0f;           
+		Info.FadeOutDuration = 0.5f;
+		Info.bAllowThrottleWhenFrameRateIsLow = false;
+		Info.bUseThrobber = false;
+		Info.Image = FAppStyle::GetBrush("Icons.Warning");
+
+		Notification = FSlateNotificationManager::Get().AddNotification(Info);
+
+		if (Notification.IsValid())
+		{
+			Notification->SetCompletionState(SNotificationItem::CS_Pending);
 		}
 	}
 
@@ -60,4 +99,9 @@ FString UFloraEngineSettings::GetTemplatePath(FName ModelName) {
 #elif PLATFORM_ANDROID
 	return FPaths::Combine(*GetModelRootPath(), ModelName.ToString(), *(ModelName.ToString() + "_template.json"));
 #endif
+}
+
+EDeviceType UFloraEngineSettings::GetDeviceType() 
+{
+	return GetMutableDefault<UFloraEngineSettings>()->DeviceType;
 }

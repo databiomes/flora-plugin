@@ -1,11 +1,10 @@
 // Copyright © 2025, Databiomes Inc. All rights reserved
 
 #include "FloraEngine.h"
-#include "FloraEngineSettings.h"
-#include "Developer/Settings/Public/ISettingsModule.h"
 #include "Interfaces/IPluginManager.h"
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
+#include "FloraEngineSettings.h"
 
 #define LOCTEXT_NAMESPACE "FFloraEngineModule"
 
@@ -15,8 +14,13 @@ void FFloraEngineModule::StartupModule()
 	FString LibraryPath;
 
 	// Determine platform and set library path accordingly
-#if PLATFORM_WINDOWS	
-	LibraryPath = FPaths::Combine(*BaseDir, FLORA_DLL_PATH);
+#if PLATFORM_WINDOWS
+	FString DeviceType = UEnum::GetValueAsName(UFloraEngineSettings::GetDeviceType()).ToString();
+	DeviceType.RemoveFromStart("EDeviceType::");
+	if (DeviceType == "intel_cpu") 
+		DeviceType = "cpu";
+
+	LibraryPath = FPaths::Combine(*BaseDir, "Binaries", "Win64", DeviceType, "flora.dll");
 #elif PLATFORM_MAC
 	LibraryPath = FPaths::Combine(*BaseDir, FLORA_DYLIB_PATH);
 #elif PLATFORM_LINUX || PLATFORM_ANDROID
@@ -34,17 +38,14 @@ void FFloraEngineModule::StartupModule()
 		UE_LOG(LogTemp, Error, TEXT("ThirdPartyLibraryError: Flora"));
 		return;
 	}
-
-	// Register settings
-	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
-	{
-		SettingsModule->RegisterSettings("Project", "Plugins", "Flora_Engine_Settings",
-			LOCTEXT("FloraEngine", "Flora Engine"), LOCTEXT("FloraEngineDescription", "Configure Flora Engine plugin."),
-			GetMutableDefault<UFloraEngineSettings>());
-	}
 }
 
 void FFloraEngineModule::ShutdownModule()
+{
+	FreeFloraDLLHandle();
+}
+
+void FFloraEngineModule::FreeFloraDLLHandle() 
 {
 	if (FloraDLLHandle)
 	{

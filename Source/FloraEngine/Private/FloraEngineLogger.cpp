@@ -48,7 +48,7 @@ void UFloraEngineLogger::LogMessage(const FString& Message)
 		}
 
 		if (UFloraEngineSettings::AlsoLoggingToUnreal()) {
-			UE_LOG(LogTemp, Log, TEXT("%s"), *FinalMessage);
+			UE_LOG(LogFlora, Log, TEXT("%s"), *FinalMessage);
 		}
 	}
 }

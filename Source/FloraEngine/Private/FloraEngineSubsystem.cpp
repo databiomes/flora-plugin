@@ -71,16 +71,20 @@ void UFloraEngineSubsystem::Deinitialize()
 #if WITH_EDITOR
 	FEditorDelegates::EndPIE.Remove(EndPIEHandle);
 #endif
+	for (UNLM* nlm : NLMs) {
+		if (nlm->Model)
+			_DLLDelNLM(nlm->Model);
+	}
 }
 
-UNLM* UFloraEngineSubsystem::InitNLM(UObject* WorldContextObject, FName ModelName, FString FirstLine, FString SecondLine)
+UNLM* UFloraEngineSubsystem::InitNLM(UObject* WorldContextObject, FName ModelName, TArray<FString> InputLines)
 {
 	if (!bInitialized) {
-		UE_LOG(LogTemp, Error, TEXT("Flora not initialized, use the Flora Engine Init node first!"));
+		UE_LOG(LogFlora, Error, TEXT("Flora not initialized, use the Flora Engine Init node first!"));
 		return nullptr;
 	}
 
-	UNLM* nlm = NewObject<UNLM>((UObject*)GetTransientPackage(), UNLM::StaticClass());
+	UNLM* NLM = NewObject<UNLM>((UObject*)GetTransientPackage(), UNLM::StaticClass());
 
 	// Set path using the model name
 	FString Path = FPaths::Combine(*ModelRootPath, *ModelName.ToString());
@@ -88,7 +92,7 @@ UNLM* UFloraEngineSubsystem::InitNLM(UObject* WorldContextObject, FName ModelNam
 	if (!FPaths::DirectoryExists(Path))
 	{
 		// Should never happen due to dropdown being generated from existing folder names
-		UE_LOG(LogTemp, Error, TEXT("Directory does not exist: %s"), *Path);
+		UE_LOG(LogFlora, Error, TEXT("Directory does not exist: %s"), *Path);
 		UGameplayStatics::GetGameInstance(WorldContextObject)->GetSubsystem<UFloraEngineLogger>()->LogMessage("Directory does not exist: " + Path);
 		return nullptr;
 	}
@@ -107,31 +111,45 @@ UNLM* UFloraEngineSubsystem::InitNLM(UObject* WorldContextObject, FName ModelNam
 #endif
 
 	// Set properties for the model instance
-	nlm->Model = _DLLInitNLM(TCHAR_TO_ANSI(*Path));
-	nlm->FirstLine = *FirstLine;
-	nlm->SecondLine = *SecondLine;
-	nlm->ModelName = ModelName;
+	NLM->Model = _DLLInitNLM(TCHAR_TO_ANSI(*Path), false);
+	NLM->InputLines = InputLines;
+	NLM->ModelName = ModelName;
 
 	// Setup model from json
-	SetupModelFromJson(WorldContextObject, nlm);
+	SetupModelFromJson(WorldContextObject, NLM);
+	NLMs.Add(NLM);
 
 	UGameplayStatics::GetGameInstance(WorldContextObject)->GetSubsystem<UFloraEngineLogger>()->LogMessage("Loading model: " + ModelName.ToString());
-	return nlm;
+	return NLM;
+}
+
+void UFloraEngineSubsystem::DeleteNLM(UNLM* Model)
+{
+	if (!bInitialized) {
+		UE_LOG(LogFlora, Error, TEXT("Flora not initialized, use the Flora Engine Init node first!"));
+		return;
+	}
+	if (!Model || !Model->Model) {
+		UE_LOG(LogFlora, Error, TEXT("Model is null on delete call."));
+		return;
+	}
+	_DLLDelNLM(Model->Model);
+	NLMs.Remove(Model);
 }
 
 void UFloraEngineSubsystem::AsyncInfer(FModelAsyncPrompt* ModelPrompt, const TFunction<void()>& Fn)
 {
 	if (!bInitialized) {
-		UE_LOG(LogTemp, Error, TEXT("Flora not initialized, use the Flora Engine Init node first!"));
+		UE_LOG(LogFlora, Error, TEXT("Flora not initialized, use the Flora Engine Init node first!"));
 		return;
 	}
 
 	if (!ModelPrompt->Model || !ModelPrompt->Model->Model) {
-		UE_LOG(LogTemp, Error, TEXT("Model is null on infer call."));
+		UE_LOG(LogFlora, Error, TEXT("Model is null on infer call."));
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Activate called on thread ID: %d"), FPlatformTLS::GetCurrentThreadId());
+	UE_LOG(LogFlora, Log, TEXT("Activate called on thread ID: %d"), FPlatformTLS::GetCurrentThreadId());
 	ActivePrompts.Add(ModelPrompt);
 	// Run the inference on a separate thread
 	Async(EAsyncExecution::Thread, [=, this]()
@@ -145,33 +163,41 @@ void UFloraEngineSubsystem::AsyncInfer(FModelAsyncPrompt* ModelPrompt, const TFu
 			TSharedPtr<FJsonObject> InputLine;
 
 			FString Left, Right;
-			ModelInputs[1]->AsString().Split("<string>", &Left, &Right);
-			Input += Left;
-			Input += ModelPrompt->Model->FirstLine;
-			Input += Right;
+			if (ModelPrompt->Model->InputLines.Num() < ModelPrompt->Model->NumInputs - 1)
+			{
+				UE_LOG(LogFlora, Error, TEXT("Not enough input lines provided for the model. Expected: %d, Provided: %d"), ModelPrompt->Model->NumInputs - 1, ModelPrompt->Model->InputLines.Num());
+				return;
+			}
+			else {
+				for (int i = 0; i < ModelPrompt->Model->NumInputs - 1; i++)
+				{
+					ModelInputs[1 + i]->AsString().Split("<string>", &Left, &Right);
+					Input += Left;
+					Input += ModelPrompt->Model->InputLines[i];
+					Input += Right;
+				}
+			}
+			int InputOffset = ModelPrompt->Model->NumInputs;
 
-			ModelInputs[2]->AsString().Split("<string>", &Left, &Right);
-			Right.Split("<string>", &Left, &Right);
+			ModelInputs[InputOffset]->AsString().Split("<string>", &Left, &Right);
 			Input += Left;
 			Input += ModelPrompt->Prompt;
 			Input += Right;
 
 			// Currently only basic type exists
 			if (ModelPrompt->Model->InputFormat->GetObjectField(ModelPrompt->InstructionLine.ToString())->GetStringField(TEXT("type")) == "basic") {
-				Input += ModelInputs[3]->AsString();
-				ModelPrompt->Model->PrevFirstLine = ModelPrompt->Model->FirstLine;
-				ModelPrompt->Model->FirstLine = ModelPrompt->Model->SecondLine;
+				Input += ModelInputs[1 + InputOffset]->AsString();
 			}
 
-			Input += ModelInputs[4]->AsString(); // <RUN>
+			Input += ModelInputs[2 + InputOffset]->AsString(); // <RUN>
 
 			UGameplayStatics::GetGameInstance(ModelPrompt->WorldContextObject)->GetSubsystem<UFloraEngineLogger>()->LogMessage("--- Infer called on " + ModelPrompt->Model->ModelName.ToString() + " model ---\nInput: \n" + Input + "\n----------------------------------------\n");
 			std::string InputStd = TCHAR_TO_UTF8(*Input);
 			const char* ToInfer = InputStd.c_str();
 
-			UE_LOG(LogTemp, Log, TEXT("_DLLInferNLM started on thread ID: %d"), FPlatformTLS::GetCurrentThreadId());
+			UE_LOG(LogFlora, Log, TEXT("_DLLInferNLM started on thread ID: %d"), FPlatformTLS::GetCurrentThreadId());
 			_DLLInferNLM(ModelPrompt->Model->Model, ToInfer);
-			UE_LOG(LogTemp, Log, TEXT("_DLLInferNLM completed on thread ID: %d"), FPlatformTLS::GetCurrentThreadId());
+			UE_LOG(LogFlora, Log, TEXT("_DLLInferNLM completed on thread ID: %d"), FPlatformTLS::GetCurrentThreadId());
 
 			if (!ModelPrompt->bExiting) {
 				AsyncTask(ENamedThreads::GameThread, Fn);
@@ -182,11 +208,11 @@ void UFloraEngineSubsystem::AsyncInfer(FModelAsyncPrompt* ModelPrompt, const TFu
 void UFloraEngineSubsystem::GetOutput(UObject* WorldContextObject, UNLM* Model, FString& Output, uint8& InstructionIndex, uint8& ReactionIndex, FString& Reaction, float& TokenSpeed)
 {
 	if (!bInitialized) {
-		UE_LOG(LogTemp, Error, TEXT("Flora not initialized, use the Flora Engine Init node first!"));
+		UE_LOG(LogFlora, Error, TEXT("Flora not initialized, use the Flora Engine Init node first!"));
 		return;
 	}
 	if (!Model) {
-		UE_LOG(LogTemp, Error, TEXT("Model is null! Try deleting it and re-making."));
+		UE_LOG(LogFlora, Error, TEXT("Model is null! Try deleting it and re-making."));
 		return;
 	}
 	UNLMOutput* ModelOutput = FloraEngineOutputNLM(Model);
@@ -202,16 +228,6 @@ void UFloraEngineSubsystem::GetOutput(UObject* WorldContextObject, UNLM* Model, 
 	OutputStr.ParseIntoArrayLines(Lines);
 	Output = Lines[0];
 	Reaction = Lines[1];
-
-	// If the reaction is guardrailed, revert to previous first line
-	if (Reaction.Contains("<UNK>"))
-	{
-		Model->FirstLine = Model->PrevFirstLine;
-	}
-	else
-	{
-		Model->SecondLine = Lines[0];
-	}
 	TokenSpeed = ModelOut->TokenSpeed;
 
 	// Logged when parsing the output, if output is obtained but not parsed then it won't be logged
@@ -245,6 +261,8 @@ void UFloraEngineSubsystem::SetupModelFromJson(UObject* WorldContextObject, UNLM
 	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(FileText);
 	TSharedPtr<FJsonObject> ResponseObj;
 	FJsonSerializer::Deserialize(JsonReader, ResponseObj);
+
+	Model->NumInputs = ResponseObj->GetIntegerField(TEXT("inputs"));
 
 	const TSharedPtr<FJsonObject>* ModelInput = nullptr;
 	// Get the "instructions" object
@@ -282,31 +300,31 @@ void UFloraEngineSubsystem::SetupModelFromJson(UObject* WorldContextObject, UNLM
 		return;
 	}
 
-	UE_LOG(LogTemp, Error, TEXT("Could not find model input format in json file: %s"), *Path);
+	UE_LOG(LogFlora, Error, TEXT("Could not find model input format in json file: %s"), *Path);
 	return;
 }
 
 UNLMOutput* UFloraEngineSubsystem::FloraEngineOutputNLM(UNLM* Model)
 {
 	if (!bInitialized) {
-		UE_LOG(LogTemp, Error, TEXT("Flora not initialized, use the Flora Engine Init node first!"));
+		UE_LOG(LogFlora, Error, TEXT("Flora not initialized, use the Flora Engine Init node first!"));
 		return nullptr;
 	}
 
 	if (!Model) {
-		UE_LOG(LogTemp, Error, TEXT("Model is null! Try deleting it and re-making."));
+		UE_LOG(LogFlora, Error, TEXT("Model is null! Try deleting it and re-making."));
 		return nullptr;
 	}
 
 	if (!Model->Model) {
-		UE_LOG(LogTemp, Error, TEXT("Internal model is null! Try deleting it and re-making."));
+		UE_LOG(LogFlora, Error, TEXT("Internal model is null! Try deleting it and re-making."));
 		return nullptr;
 	}
 
 	UNLMOutput* Output = NewObject<UNLMOutput>((UObject*)GetTransientPackage(), UNLMOutput::StaticClass());
 
 	if (!_DLLOutputNLM) {
-		UE_LOG(LogTemp, Error, TEXT("Output function is null!"));
+		UE_LOG(LogFlora, Error, TEXT("Output function is null!"));
 		return nullptr;
 	}
 
@@ -349,7 +367,7 @@ void UAsyncFloraEngineBPLibrary::Activate()
 	FloraEngineSubsystem->AsyncInfer(&ModelPrompt, [this]()
 		{
 			if (!ModelPrompt.bExiting) {
-				UE_LOG(LogTemp, Log, TEXT("Post-InferNLM actions running on thread ID: %d"), FPlatformTLS::GetCurrentThreadId());
+				UE_LOG(LogFlora, Log, TEXT("Post-InferNLM actions running on thread ID: %d"), FPlatformTLS::GetCurrentThreadId());
 				OnCompleted.Broadcast();
 				SetReadyToDestroy();
 			}
