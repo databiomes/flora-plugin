@@ -68,6 +68,7 @@ public class FloraEngine : ModuleRules
         // Check for ModelRootPath in DefaultEngine.ini (this value is set in FloraEngineSettings)
         string ProjectDir = Target.ProjectFile != null ? Target.ProjectFile.Directory.FullName : null;
         string ModelRootPath = "Content/Models"; // default path from FloraEngineSettings
+        string DeviceType = "cpu"; // default device type
         if (ProjectDir != null)
         {
             string DefaultGameIni = Path.Combine(ProjectDir, "Config", "DefaultEngine.ini");
@@ -79,10 +80,15 @@ public class FloraEngine : ModuleRules
                     {
                         ModelRootPath = line.Split('=')[2].Trim();
                         ModelRootPath = ModelRootPath.Substring(1, ModelRootPath.Length - 3); // remove quotes and trailing )
+                    } else if (line.StartsWith("DeviceType="))
+                    {
+                        DeviceType = line.Split('=')[1].Trim();
                     }
                 }
             }
         }
+        if (DeviceType == "intel_cpu")
+            DeviceType = "cpu"; // FloraEngine uses same dll for cpu inference
 
         // Define paths for different platforms
         // Flora SO/Dylib paths
@@ -95,12 +101,29 @@ public class FloraEngine : ModuleRules
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
             // Add Flora DLL as a runtime dependency
-            RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/amd_npu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/amd_npu", "flora.dll"));
-            RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/cpu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/cpu", "flora.dll"));
-            RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/intel_npu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/intel_npu", "flora.dll"));
-            RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/intel_npu", "openvino.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/intel_npu", "openvino.dll"));
+            if (Target.Type == TargetType.Editor) // All versions if editor (packaging plugin)
+            {
+                RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/intel_npu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/intel_npu", "flora.dll"));
+                RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/intel_npu", "openvino.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/intel_npu", "openvino.dll"));
+                RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/cpu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/cpu", "flora.dll"));
+                RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/amd_npu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/amd_npu", "flora.dll"));
+                PublicDelayLoadDLLs.Add("openvino.dll");
+            } 
+            else if ( DeviceType == "intel_npu")
+            {
+                RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/intel_npu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/intel_npu", "flora.dll"));
+                RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/intel_npu", "openvino.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/intel_npu", "openvino.dll"));
+                PublicDelayLoadDLLs.Add("openvino.dll");
+            }
+            else if (DeviceType == "cpu")
+            {
+                RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/cpu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/cpu", "flora.dll"));
+            }
+            else if (DeviceType == "amd_npu")
+            {
+                RuntimeDependencies.Add(Path.Combine(PluginDirectory, "Binaries/Win64/amd_npu", "flora.dll"), Path.Combine(PluginDirectory, "Source/ThirdParty/bin/Win64/amd_npu", "flora.dll"));
+            }
 
-            PublicDelayLoadDLLs.Add("openvino.dll");
             PublicDelayLoadDLLs.Add("flora.dll");
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
