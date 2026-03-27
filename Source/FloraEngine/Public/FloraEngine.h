@@ -16,4 +16,5 @@ public:
 	void FreeFloraDLLHandle();
 private:
 	void* FloraDLLHandle;
+	void* OpenVinoDLLHandle;
 };

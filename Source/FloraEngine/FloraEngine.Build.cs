@@ -64,6 +64,8 @@ public class FloraEngine : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
             );
+        string FloraPluginName = "FloraEngine";
+        PublicDefinitions.Add($"FLORA_PLUGIN_NAME=\"{FloraPluginName}\"");
 
         // Check for ModelRootPath in DefaultEngine.ini (this value is set in FloraEngineSettings)
         string ProjectDir = Target.ProjectFile != null ? Target.ProjectFile.Directory.FullName : null;

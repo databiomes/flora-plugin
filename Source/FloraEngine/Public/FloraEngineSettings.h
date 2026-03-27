@@ -44,6 +44,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "General")
 	FString GenerateReactions;
 
+	// Only for state machine models
+	UPROPERTY(EditAnywhere, Category = "General")
+	FString GenerateStates;
+
 	UPROPERTY(config, EditAnywhere, Category = "General", meta = (Tooltip = "Device that Flora will use."))
 	EDeviceType DeviceType = EDeviceType::cpu;
 	
