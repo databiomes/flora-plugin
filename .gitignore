@@ -107,5 +107,6 @@ DerivedDataCache/*
 /Content/*.so
 /Content/*.dll
 /Content/*.bin
+/Content/*/*/*.csv
 /Content/*/*/*.json
 

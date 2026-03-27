@@ -10,8 +10,9 @@
 	"DocsURL": "github.com/databiomes/flora-plugin",
 	"MarketplaceURL": "",
 	"SupportURL": "",
-	"EngineVersion": "5.6.0",
 	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
 	"Installed": true,
 	"Modules": [
 		{

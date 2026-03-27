@@ -28,7 +28,7 @@ void UFloraEngineSettings::PostEditChangeProperty(FPropertyChangedEvent& Propert
 
 	if (PropertyChangedEvent.MemberProperty->GetFName() == ModelRootPicker)
 	{
-		FString PluginDir = IPluginManager::Get().FindPlugin(TEXT("FloraEngine"))->GetBaseDir();
+		FString PluginDir = IPluginManager::Get().FindPlugin(FLORA_PLUGIN_NAME)->GetBaseDir();
 		PluginDir = FPaths::Combine(PluginDir, TEXT("")); // ensures trailing slash
 		FPaths::MakePathRelativeTo(ModelRootPath.Path, *PluginDir);
 
@@ -88,7 +88,7 @@ bool UFloraEngineSettings::IsDecryptLog() {
 }
 
 FString UFloraEngineSettings::GetModelRootPath() {
-	FString BaseDir = IPluginManager::Get().FindPlugin("FloraEngine")->GetBaseDir();
+	FString BaseDir = IPluginManager::Get().FindPlugin(FLORA_PLUGIN_NAME)->GetBaseDir();
 	FString FullPath = FPaths::ConvertRelativePathToFull(*BaseDir, GetMutableDefault<UFloraEngineSettings>()->ModelRootPath.Path);
 	return FullPath;
 }

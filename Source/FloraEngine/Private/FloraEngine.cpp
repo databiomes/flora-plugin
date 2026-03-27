@@ -10,7 +10,7 @@
 
 void FFloraEngineModule::StartupModule()
 {
-	FString BaseDir = IPluginManager::Get().FindPlugin("FloraEngine")->GetBaseDir();
+	FString BaseDir = IPluginManager::Get().FindPlugin(FLORA_PLUGIN_NAME)->GetBaseDir();
 	FString LibraryPath;
 
 	// Determine platform and set library path accordingly
@@ -19,6 +19,8 @@ void FFloraEngineModule::StartupModule()
 	DeviceType.RemoveFromStart("EDeviceType::");
 	if (DeviceType == "intel_cpu") 
 		DeviceType = "cpu";
+	if (DeviceType == "intel_npu")
+		OpenVinoDLLHandle = FPlatformProcess::GetDllHandle(*FPaths::Combine(*BaseDir, "Binaries", "Win64", DeviceType, "openvino.dll"));
 
 	LibraryPath = FPaths::Combine(*BaseDir, "Binaries", "Win64", DeviceType, "flora.dll");
 #elif PLATFORM_MAC
@@ -35,7 +37,7 @@ void FFloraEngineModule::StartupModule()
 
 	if (!FloraDLLHandle)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ThirdPartyLibraryError: Flora"));
+		UE_LOG(LogFlora, Error, TEXT("Failed to load Flora library from path: %s"), *LibraryPath);
 		return;
 	}
 }
@@ -50,6 +52,10 @@ void FFloraEngineModule::FreeFloraDLLHandle()
 	if (FloraDLLHandle)
 	{
 		FPlatformProcess::FreeDllHandle(FloraDLLHandle);
+	}
+	if (OpenVinoDLLHandle)
+	{
+		FPlatformProcess::FreeDllHandle(OpenVinoDLLHandle);
 	}
 }
 

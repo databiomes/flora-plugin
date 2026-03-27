@@ -39,12 +39,10 @@ void UFloraEngineLogger::LogMessage(const FString& Message)
 		if (FileManager.FileExists(*LogFilePath))
 		{
 			FFileHelper::SaveStringToFile(MessageWithNewLine, *LogFilePath, FFileHelper::EEncodingOptions::ForceUTF8, &IFileManager::Get(), EFileWrite::FILEWRITE_Append);
-			//UE_LOG(LogTemp, Log, TEXT("Appended to file:%s, %s"), *LogFilePath, *Message);
 		}
 		else
 		{
 			FFileHelper::SaveStringToFile(MessageWithNewLine, *LogFilePath, FFileHelper::EEncodingOptions::ForceUTF8);
-			//UE_LOG(LogTemp, Log, TEXT("Created new file:%s, %s"), *LogFilePath, *Message);
 		}
 
 		if (UFloraEngineSettings::AlsoLoggingToUnreal()) {

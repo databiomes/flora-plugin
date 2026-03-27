@@ -91,8 +91,6 @@ void SFloraModelNamePin::SetPropertyWithName(FName& Name)
 			NSLOCTEXT("GraphEditor", "ChangeListNameFromConfigPinValue", "Change List Name From Config Value"));
 		GraphPinObj->Modify();
 
-		//UE_LOG(LogTemp, Warning, TEXT("Verify values old: \"%s\" chosen: \"%s\""), *CurrentDefaultValue, *PinString);
-
 		if (PinString != GraphPinObj->GetDefaultAsString())
 		{
 			GraphPinObj->GetSchema()->TrySetDefaultValue(*GraphPinObj, PinString);
