@@ -11,7 +11,7 @@
 
 ## Overview
 An open plugin for running Databiomes Language Models in Unreal Engine.</br>
-An addon plugin is available to provide Automatic Speech Recognition (ASR) using Whisper and Text to Speech (TTS) using Kokoro.
+An advanced plugin is available to provide Automatic Speech Recognition (ASR) using Whisper and Text to Speech (TTS) using Kokoro.
 
 ## Installation
 For blueprint only projects, `FloraEngine.zip` can be downloaded from the [latest release](https://github.com/databiomes/flora-plugin/releases/latest) and extracted to the marketplace plugins folder `"UE_<VERSION NUMBER>/Engine/Plugins/Marketplace/"`. </br>  
