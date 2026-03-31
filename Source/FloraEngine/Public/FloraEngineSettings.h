@@ -1,4 +1,4 @@
-// Copyright © 2025, Databiomes Inc. All rights reserved
+// Copyright © 2026, Databiomes Inc. All rights reserved
 
 #pragma once
 
@@ -15,10 +15,10 @@ DECLARE_LOG_CATEGORY_EXTERN(LogFlora, Log, All);
 UENUM(BlueprintType)
 enum class EDeviceType : uint8
 {
-	cpu UMETA(DisplayName = "GeneralCPU"),
-	intel_cpu  UMETA(DisplayName = "IntelCPU"),
-	intel_npu UMETA(DisplayName = "IntelNPU"),
-	amd_npu  UMETA(DisplayName = "AMDNPU")
+	cpu UMETA(DisplayName = "General CPU"),
+	intel_cpu  UMETA(DisplayName = "Intel CPU"),
+	intel_npu UMETA(DisplayName = "Intel NPU"),
+	amd_npu  UMETA(DisplayName = "AMD NPU")
 };
 
 // Configure Flora Engine plugin.
